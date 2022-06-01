@@ -1,56 +1,100 @@
+import axios from "axios";
 import { useState } from "react";
 
-type PasswordInputProps = {
+type FormInputProps = {
   disable: boolean;
   password: string;
   passwordRepeat: string;
+  email: string;
+  username: string;
 };
 
+export type FormBodyProps = {
+  password: string;
+  email: string;
+  username: string;
+};
+
+export type FormResponseProps = {
+  error: string;
+};
+
+export const apiUrl = "/api/1.0/users";
 export default function SignUpPage() {
-  const [passwordInput, setPasswordInput] = useState<PasswordInputProps>({
+  const [formInput, setFormInput] = useState<FormInputProps>({
     disable: true,
     password: "",
     passwordRepeat: "",
+    email: "",
+    username: "",
   });
-  const handlePasswordInputChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setPasswordInput(({ passwordRepeat }) => ({
-      disable: event.target.value !== passwordRepeat,
-      password: event.target.value,
-      passwordRepeat,
-    }));
+  const handleSubmit = () => {
+    const { username, email, password } = formInput;
+    axios.post<FormBodyProps>(apiUrl, {
+      username,
+      email,
+      password,
+    });
+    // fetch(apiUrl, {
+    //   method: "POST",
+    //   headers: {
+    //     "Content-Type": "application/json",
+    //   },
+    //   body: JSON.stringify({
+    //     username,
+    //     email,
+    //     password,
+    //   }),
+    // });
   };
-  const handlePasswordRepeatInputChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setPasswordInput(({ password }) => ({
-      disable: event.target.value !== password,
-      password: password,
-      passwordRepeat: event.target.value,
+
+  const handleInputOnChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = event.target;
+    const passwordRepeat =
+      id === "passwordRepeat" ? value : formInput.passwordRepeat;
+    const password = id === "password" ? value : formInput.password;
+    setFormInput(({ ...prev }) => ({
+      ...prev,
+      disable: password !== passwordRepeat || passwordRepeat == "",
+      [id]: value,
     }));
   };
 
   return (
     <>
-      <h1>Sign Up</h1>
-      <label htmlFor="username">Username</label>
-      <input id="username" />
-      <label htmlFor="email">E-mail</label>
-      <input id="email" type={"email"} />
-      <label htmlFor="password">Password</label>
-      <input
-        onChange={handlePasswordInputChange}
-        id="password"
-        type="password"
-      />
-      <label htmlFor="passwordRepeat">Password Repeat</label>
-      <input
-        onChange={handlePasswordRepeatInputChange}
-        id="passwordRepeat"
-        type="password"
-      />
-      <button disabled={passwordInput.disable}>Sign Up</button>
+      <form onSubmit={handleSubmit}>
+        <h1>Sign Up</h1>
+        <label htmlFor="username">Username</label>
+        <input
+          onChange={handleInputOnChange}
+          value={formInput.username}
+          id="username"
+        />
+        <label htmlFor="email">E-mail</label>
+        <input
+          onChange={handleInputOnChange}
+          value={formInput.email}
+          id="email"
+          type={"email"}
+        />
+        <label htmlFor="password">Password</label>
+        <input
+          onChange={handleInputOnChange}
+          id="password"
+          type="password"
+          value={formInput.password}
+        />
+        <label htmlFor="passwordRepeat">Password Repeat</label>
+        <input
+          onChange={handleInputOnChange}
+          id="passwordRepeat"
+          type="password"
+          value={formInput.passwordRepeat}
+        />
+        <button onClick={handleSubmit} disabled={formInput.disable}>
+          Sign Up
+        </button>
+      </form>
     </>
   );
 }

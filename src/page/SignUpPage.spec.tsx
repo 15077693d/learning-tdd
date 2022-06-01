@@ -1,6 +1,12 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import SignUpPage from "./SignUpPage";
+import { rest } from "msw";
+import { setupServer } from "msw/node";
+import SignUpPage, {
+  apiUrl,
+  FormBodyProps,
+  FormResponseProps,
+} from "./SignUpPage";
 
 describe("Sign up Page", () => {
   describe("Layout", () => {
@@ -68,7 +74,59 @@ describe("Sign up Page", () => {
       const button = screen.getByRole("button", { name: "Sign Up" });
       userEvent.type(passwordInput, "mock-password");
       userEvent.type(passwordRepeatInput, "mock-password");
-      expect(button).toBeEnabled();
+    });
+    it("send username, email and password to backend after clicking the button", async () => {
+      let requestBody;
+      const server = setupServer(
+        rest.post<FormBodyProps, FormResponseProps>(apiUrl, (req, res, ctx) => {
+          requestBody = req.body;
+          return res(ctx.status(200));
+        })
+      );
+      server.listen();
+      render(<SignUpPage />);
+      const passwordInput = screen.getByLabelText("Password");
+      const passwordRepeatInput = screen.getByLabelText("Password Repeat");
+      const usernameInput = screen.getByLabelText("Username");
+      const emailInput = screen.getByLabelText("E-mail");
+      const button = screen.getByRole("button", { name: "Sign Up" });
+      userEvent.type(usernameInput, "mock-username");
+      userEvent.type(emailInput, "mock-email");
+      userEvent.type(passwordInput, "mock-password");
+      userEvent.type(passwordRepeatInput, "mock-password");
+      userEvent.click(button);
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      expect(requestBody).toEqual({
+        username: "mock-username",
+        email: "mock-email",
+        password: "mock-password",
+      });
+      /** axios example */
+      // const mockfn = jest.fn();
+      // axios.post = mockfn;
+      // userEvent.click(button);
+      // const firstCallMockFunction = mockfn.mock.calls[0];
+      // const body = firstCallMockFunction[1];
+      // expect(body).toEqual({
+      //   username: "mock-username",
+      //   email: "mock-email",
+      //   password: "mock-password",
+      // });
+
+      /** fetch example */
+      // const mockfn = jest.fn();
+      // window.fetch = mockfn;
+      // userEvent.click(button);
+      // const firstCallMockFunction = mockfn.mock.calls[0];
+      // const body = firstCallMockFunction[1];
+      // expect(body).toEqual({
+      //   method: "POST",
+      //   body: JSON.stringify({
+      //     username: "mock-username",
+      //     email: "mock-email",
+      //     password: "mock-password",
+      //   }),
+      // });
     });
   });
 });
